@@ -1,0 +1,49 @@
+name: trace udp
+description: monitor send, receive and bind events of UDP connections
+homepageURL: https://inspektor-gadget.io/
+documentationURL: https://www.inspektor-gadget.io/docs/latest/gadgets/trace_udp
+sourceURL: https://github.com/inspektor-gadget/inspektor-gadget/tree/main/gadgets/trace_udp
+datasources:
+  traceudp:
+    fields:
+      src:
+        annotations:
+          template: l4endpoint
+      dst:
+        annotations:
+          template: l4endpoint
+      type_raw:
+        annotations:
+          columns.hidden: true
+      type:
+        annotations:
+          description: Type of UDP event
+          value.one-of: "send, recv, bind"
+      error_raw:
+        annotations:
+          columns.hidden: true
+      fd:
+        annotations:
+          description: The FD where the operation happened
+          columns.hidden: true
+      bytes:
+        annotations:
+          description: Number of bytes sent or received
+params:
+  ebpf:
+    send_only:
+      key: send-only
+      defaultValue: "false"
+      description: Show only send events
+    recv_only:
+      key: recv-only
+      defaultValue: "false"
+      description: Show only receive events
+    bind_only:
+      key: bind-only
+      defaultValue: "false"
+      description: Show only bind events
+    failure_only:
+      key: failure-only
+      defaultValue: "false"
+      description: Don't show successful events
