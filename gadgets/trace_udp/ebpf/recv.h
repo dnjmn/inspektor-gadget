@@ -18,8 +18,14 @@ static __always_inline int handle_sys_recvfrom_x(struct syscall_trace_exit *ctx)
 		goto cleanup;
 
 	fd_ptr = bpf_map_lookup_elem(&udp_tid_fd, &tid);
-	if (fd_ptr)
-		fd = *fd_ptr;
+	if (!fd_ptr)
+		goto cleanup;
+	
+	fd = *fd_ptr;
+	
+	// Only track UDP sockets
+	if (!is_udp_socket(fd))
+		goto cleanup;
 
 	// User does not want to see successful events
 	if (failure_only && ret >= 0)

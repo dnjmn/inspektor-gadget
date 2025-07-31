@@ -50,6 +50,17 @@ struct {
 	__type(value, int); // fd
 } udp_tid_fd SEC(".maps");
 
+/*
+ * Hash fd->1 to track UDP sockets
+ * We store 1 for UDP sockets, delete entry when socket is closed
+ */
+struct {
+	__uint(type, BPF_MAP_TYPE_HASH);
+	__uint(max_entries, MAX_ENTRIES);
+	__type(key, int); // fd
+	__type(value, __u8); // 1 for UDP socket
+} udp_sockets SEC(".maps");
+
 const volatile bool send_only = false;
 const volatile bool recv_only = false;
 const volatile bool bind_only = false;
@@ -63,6 +74,7 @@ GADGET_PARAM(failure_only);
 /* Define here, because there are conflicts with include files */
 #define AF_INET 2
 #define AF_INET6 10
+#define SOCK_DGRAM 2
 
 // we need this to make sure the compiler doesn't remove our struct
 const enum event_type unused_eventtype __attribute__((unused));
@@ -81,6 +93,12 @@ static __always_inline bool filter_event(enum event_type type)
 		return true;
 
 	return gadget_should_discard_data_current();
+}
+
+static __always_inline bool is_udp_socket(int fd)
+{
+	__u8 *val = bpf_map_lookup_elem(&udp_sockets, &fd);
+	return val != NULL;
 }
 
 static __always_inline void fill_event(struct event *event,
@@ -108,6 +126,17 @@ static __always_inline int update_udp_tid_fd_map(__u32 fd)
 	__u32 tid = bpf_get_current_pid_tgid();
 	bpf_map_update_elem(&udp_tid_fd, &tid, &fd, 0);
 	return 0;
+}
+
+static __always_inline void track_udp_socket(int fd)
+{
+	__u8 val = 1;
+	bpf_map_update_elem(&udp_sockets, &fd, &val, 0);
+}
+
+static __always_inline void untrack_udp_socket(int fd)
+{
+	bpf_map_delete_elem(&udp_sockets, &fd);
 }
 
 #endif // __IG_UDP_COMMON_H
