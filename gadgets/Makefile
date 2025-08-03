@@ -49,6 +49,7 @@ GADGETS ?= \
 	trace_tcp \
 	trace_tcpdrop \
 	trace_tcpretrans \
+	trace_udp \
 	top_blockio \
 	top_file \
 	top_process \
